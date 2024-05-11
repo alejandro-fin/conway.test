@@ -1,11 +1,13 @@
 import os as _os
 
-from conway_acceptance.test_logic.acceptance_test_context                          import AcceptanceTestContext
-from conway_acceptance.util.scenarios_config                                       import ScenariosConfig
+from conway.util.warnings_filter                                            import WarningsFilter
 
-from conway_test.framework.scenario_foundry.operator_scenario_manifest import OperatorScenarioManifest
-from conway_test.framework.test_database.operator_test_database        import Operator_TestDatabase
-from conway_test.util.chassis_test_statics                             import Chassis_TestStatics
+from conway_acceptance.test_logic.acceptance_test_context                   import AcceptanceTestContext
+from conway_acceptance.util.scenarios_config                                import ScenariosConfig
+
+from conway_test.framework.scenario_foundry.operator_scenario_manifest      import OperatorScenarioManifest
+from conway_test.framework.test_database.operator_test_database             import Operator_TestDatabase
+from conway_test.util.chassis_test_statics                                  import Chassis_TestStatics
 
 
 class Chassis_TestContext(AcceptanceTestContext):
@@ -14,7 +16,7 @@ class Chassis_TestContext(AcceptanceTestContext):
                  seeding_round                  = 0):
         '''
         This class is a Python context manager intended to be invoked by each test method of any of the test classes in
-        the vulnerability_management_test module.
+        the conway_test module.
 
         @param test_case_name A string, representing the "name" of the test case using this context. It should match
                 exactly what appears in the $VULNERABILITY_MANAGEMENT_SCENARIOS_REPO/ScenariosIds.yaml file.
@@ -42,6 +44,10 @@ class Chassis_TestContext(AcceptanceTestContext):
 
         super().__init__(scenario_id, manifest, notes, seeding_round)
 
+        # We want to capture warnings during the test, so we delegate to the TVM_WarningsFilter context manager
+        #
+        self.warnings_ctx                                           = WarningsFilter()
+
     def _scenarios_repo(self):
         '''
         '''
@@ -62,11 +68,25 @@ class Chassis_TestContext(AcceptanceTestContext):
 
     def __enter__(self):
         '''
-        Creates and returns a TestDatabase object. Intention is that this context manager is used by a specific
-        test case method to surround the business logic it runs, and that business logic should be run against
-        the TestDatabase returned by this method.
+        Returns self.
+        The intention is that the attributes of self will provide all the necessary objects for the
+        test cases that rely on this context manager. For example, self includes an attribute for the 
+        TestDatabase object that the test case should use.
         '''
         super().__enter__()
 
+        # Capture warnings during the test, so enter the warnings context manager
+        #
+        self.warnings_ctx.__enter__()
+
         return self
+    
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        super().__exit__(exc_type, exc_value, exc_tb)
+
+        # Check out the collected warnings, and if appropriate raise errors. This is done by delegating
+        # to the WarningsFilter
+        #
+        self.warnings_ctx.__exit__(exc_type, exc_value, exc_tb)
     

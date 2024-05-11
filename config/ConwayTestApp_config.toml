@@ -1,0 +1,3 @@
+[secrets]
+
+vault_location = "$CHASSIS_SCENARIOS_REPO/secrets.yaml"

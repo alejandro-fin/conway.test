@@ -10,7 +10,7 @@ class OperatorScenarioManifest(ScenarioManifest):
 
     def __init__(self, scenarios_root_folder, scenario_id):
         '''
-        This is a manifest class scenarios used to test functionality of the :class:`conway_ops`
+        This is a scenario manifest class used to test functionality of the :class:`conway_ops`
         module. This is functionality intended for an Operator persona.
 
         @param scenarios_root_folder A string representing the absolute path to a folder which serves as the root
