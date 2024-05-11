@@ -1,13 +1,13 @@
 import abc
 
 from conway.application.application                                 import Application
+from conway.util.json_utils                                         import JSON_Utils
 
 from conway_acceptance.test_logic.acceptance_test_case              import AcceptanceTestCase
 
 from conway_ops.onboarding.user_profile                             import UserProfile
 from conway_ops.repo_admin.github_repo_inspector                    import GitHub_RepoInspector
-
-
+from conway_ops.util.git_branches                                   import GitBranches
 
 # GOTCHA
 #
@@ -66,31 +66,109 @@ class RepoManipulationTestCase(AcceptanceTestCase, abc.ABC):
 
         project_name                                = f"scenario_{ctx.scenario_id}"  
 
-        # Inspector object to connect to GitHub, but not tied to any specific repo
+        # Inspector objects to connect to GitHub, but not tied to any specific repo. 
+        #
+        # NB: Here P.REMOTE_ROOT is something like
+        #
+        #   https://{OWNER}@github.com/{OWNER}".
+        #
+        # GOTCHA: P.REMOTE_ROOT is not used to create the URL of HTTP requests. It is only used to extract the
+        #       owner of the repo.
+        #
         github                                      = GitHub_RepoInspector(
                                                             parent_url          = P.REMOTE_ROOT,
                                                             repo_name           = None)
 
-        pre_existing_repos                          = github.GET(resource_path = "/repos", resource = "orgs")
-        pre_existing_repos                          = [] if pre_existing_repos is None else pre_existing_repos
+        # GitHub HTTP call is something like
+        #
+        #   'GET https://api.github.com/users/testrobot-ccl/repos'
+        #
+        pre_existing_repos                          = [r["name"] for r in github.GET(resource = "users", 
+                                                                                     sub_path = "/repos")]
 
         for repo_name in P.REPO_LIST(project_name):
              
 
             if repo_name in pre_existing_repos:
-                raise ValueError(f"Can't create repo '{repo_name}' because it already exists in '{P.REMOTE_ROOT}'")
 
-            # Create the repo
+                # Must delete this old repo, so that we can subsequently create it fresh. We do a
+                #
+                #   DELETE https://api.github.com/repos/testrobot-ccl/{repo_name}
+                #
+                removal_data                        = github.DELETE(resource = "repos",
+                                                                    sub_path = f"/{repo_name}")
+                nice_removal_data                   = JSON_Utils.nice(removal_data)
+                Application.app().log(f"Removed pre-existing repo '{repo_name}' so we can re-create it - response was {nice_removal_data}")
+                #raise ValueError(f"Can't create repo '{repo_name}' because it already exists in '{P.REMOTE_ROOT}'")
+
+            # Create the repo. We do 
             #
-            data_dict                               = github.POST(
-                                                            resource_path   = "/repos",
-                                                            resource        = "orgs",
+            #       POST https://api.github.com/user/repos
+            #
+            # GOTCHA: the "user" resource is treated differenty by the GitHub_RepoInspector because the
+            #           {owner} is not added to the URL
+            #
+            repo_creation_result                    = github.POST(
+                                                            resource        = "user",
+                                                            sub_path        = "/repos",
                                                             body            = 
                                                                 {"name":            repo_name,
-                                                                "description":      "Repo used as a fixture by Conway tests"
+                                                                "description":      "Repo used as a fixture by Conway tests",
+                                                                "auto_init":        True, # So a first commit with empty README is done
                                                                 })
-            Application.app().log(f"Created repo '{repo_name}' - response was {data_dict}")
+            
+            #nice_data                               = JSON_Utils.nice(data) # This will show a lot of information
+            repo_url                                = repo_creation_result["html_url"]
+            Application.app().log(f"Created repo '{repo_name}' with URL {repo_url}")
 
+
+            # We need to create the integration branch, but for that we first need to get the
+            # the sha for the last commit on the master branch. For that we do:
+            #
+            #       GET https://api.github.com/repos/testrobot-ccl/{repo_name}/git/refs/heads
+            #
+            heads_data                                  = github.GET(
+                                                            resource        = "repos",
+                                                            sub_path        = f"/{repo_name}/git/refs/heads",
+                                                            )
+            # heads_data is something like
+            #
+            #    [
+            #        {
+            #            "ref": "refs/heads/master",
+            #            "node_id": "REF_kwDOL6SBFbFyZWZzL2hlYWRzL21hc3Rlcg",
+            #            "url": "https://api.github.com/repos/testrobot-ccl/scenario_8002.svc/git/refs/heads/master",
+            #            "object": {
+            #                "sha": "3f69985b23cf38dca098b3b867e28bf06a8a0aa5",
+            #                "type": "commit",
+            #                "url": "https://api.github.com/repos/testrobot-ccl/scenario_8002.svc/git/commits/3f69985b23cf38dca098b3b867e28bf06a8a0aa5"
+            #            }
+            #        },
+            #           ...
+            #    ]     
+            #
+            # So we extract the master branch, and from it get the SHA of interest
+            #       
+            master                                  = [elt for elt in heads_data if elt["ref"]  == "refs/heads/master"][0]
+            sha                                     = master["object"]["sha"]
+
+            # Now create the integration branch on the repo. We will do a 
+            #
+            #       POST https://api.github.com/repos/testrobot-ccl/{repo_name}/git/refs
+            #
+            integration                             = GitBranches.INTEGRATION_BRANCH.value
+            branch_creation_result                  = github.POST(
+                                                            resource        = "repos",
+                                                            sub_path        = f"/{repo_name}/git/refs",
+                                                            body            = {
+                                                                "ref":      f"refs/heads/{integration}",
+                                                                "sha":      f"{sha}"
+                                                            })
+            
+            #nice_data                               = JSON_Utils.nice(data) # For debugging - will show all data returned
+            branch_url                               = branch_creation_result["url"]
+            Application.app().log(f"Created '{integration}' branch in '{repo_name}' with URL {branch_url}")
+        
         
 
     def _get_files(self, root_folder):

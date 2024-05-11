@@ -26,7 +26,7 @@ class TestRepoSetup(RepoManipulationTestCase):
 
         with Chassis_TestContext(MY_NAME, notes=notes) as ctx:
 
-            project                                     = f"scratch_{ctx.scenario_id}"
+            project                                     = f"scenario_{ctx.scenario_id}"
             excels_to_compare.addXL_RepoStats(project)
 
             sdlc_root                                   = f"{ctx.manifest.path_to_seed()}/sdlc_root"
