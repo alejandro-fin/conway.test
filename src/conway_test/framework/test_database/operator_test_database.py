@@ -31,8 +31,8 @@ class Operator_TestDatabase(TestDatabase):
                                                 name        = Chassis_TestStatics.BUNDLED_REPOS_LOCAL_FOLDER,
                                                 hub_handle  = RelativeDataHubHandle(seed_folder, 
                                                                                     Chassis_TestStatics.BUNDLED_REPOS_LOCAL_FOLDER)))
-        
-        self.remote_repos_hub.populate_from_seed(Repos_DataHub(
+        if self.manifest.profile.REMOTE_IS_LOCAL():
+            self.remote_repos_hub.populate_from_seed(Repos_DataHub(
                                                 name        = Chassis_TestStatics.BUNDLED_REPOS_REMOTE_FOLDER, 
                                                 hub_handle  = RelativeDataHubHandle(seed_folder, 
                                                                                     Chassis_TestStatics.BUNDLED_REPOS_REMOTE_FOLDER)))
@@ -60,7 +60,8 @@ class Operator_TestDatabase(TestDatabase):
                                                 hub_handle  = RelativeDataHubHandle(seed_folder, 
                                                                                     Chassis_TestStatics.BUNDLED_REPOS_LOCAL_FOLDER)))
         
-        self.remote_repos_hub.enrich_from_seed(Repos_DataHub(
+        if self.manifest.profile.REMOTE_IS_LOCAL():
+            self.remote_repos_hub.enrich_from_seed(Repos_DataHub(
                                                 name        = Chassis_TestStatics.BUNDLED_REPOS_REMOTE_FOLDER, 
                                                 hub_handle  = RelativeDataHubHandle(seed_folder, 
                                                                                     Chassis_TestStatics.BUNDLED_REPOS_REMOTE_FOLDER)))
