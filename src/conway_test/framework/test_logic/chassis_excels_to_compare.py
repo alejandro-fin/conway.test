@@ -1,9 +1,9 @@
 
-from conway_ops.repo_admin.repo_statics                    import RepoStatics
-from conway_ops.repo_admin.repo_bundle                     import RepoBundle
-from conway_ops.repo_admin.repo_administration             import RepoAdministration
+from conway_ops.onboarding.repo_bundle                      import RepoBundle
+from conway_ops.repo_admin.repo_statics                     import RepoStatics
+from conway_ops.repo_admin.repo_administration              import RepoAdministration
 
-from conway_acceptance.test_logic.excels_to_compare                    import ExcelsToCompare, WorksheetComparisonInfo
+from conway_acceptance.test_logic.excels_to_compare         import ExcelsToCompare, WorksheetComparisonInfo
 
 
 class Chassis_ExcelsToCompare(ExcelsToCompare):
