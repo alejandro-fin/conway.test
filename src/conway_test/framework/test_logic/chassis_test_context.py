@@ -19,7 +19,7 @@ class Chassis_TestContext(AcceptanceTestContext):
         the conway_test module.
 
         @param test_case_name A string, representing the "name" of the test case using this context. It should match
-                exactly what appears in the $VULNERABILITY_MANAGEMENT_SCENARIOS_REPO/ScenariosIds.yaml file.
+                exactly what appears in the $CHASSIS_SCENARIOS_REPO/ScenariosIds.yaml file.
 
         @param notes A AcceptanceTestNotes object, that should be the data structure in which the test case can record
                 observations in the course of its execution under this context. When the context exits these notes

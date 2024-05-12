@@ -6,8 +6,8 @@ from conway.util.json_utils                                         import JSON_
 from conway_acceptance.test_logic.acceptance_test_case              import AcceptanceTestCase
 
 from conway_ops.onboarding.user_profile                             import UserProfile
-from conway_ops.repo_admin.github_repo_inspector                    import GitHub_RepoInspector
 from conway_ops.util.git_branches                                   import GitBranches
+from conway_ops.util.github_client                                  import GitHub_Client
 
 # GOTCHA
 #
@@ -75,9 +75,7 @@ class RepoManipulationTestCase(AcceptanceTestCase, abc.ABC):
         # GOTCHA: P.REMOTE_ROOT is not used to create the URL of HTTP requests. It is only used to extract the
         #       owner of the repo.
         #
-        github                                      = GitHub_RepoInspector(
-                                                            parent_url          = P.REMOTE_ROOT,
-                                                            repo_name           = None)
+        github                                      = GitHub_Client(github_owner = P.GH_ORGANIZATION)
 
         # GitHub HTTP call is something like
         #
