@@ -4,7 +4,7 @@ from conway.application.application                                 import Appli
 from conway.observability.logger                                    import Logger
 from conway.util.path_utils                                         import PathUtils
 
-from conway_test.util.chassis_test_statics                          import Chassis_TestStatics
+from conway_acceptance.util.test_statics                            import TestStatics
 
 class Test_Logger(Logger):
     '''
@@ -50,22 +50,22 @@ class Chassis_Test_Application(Application):
         # For ease of use, we want the test harness to be as "auto-configurable" as possible. So we want it
         # to be able to "discover" the location of the test scenarios repo, which normally is under the same
         # parent folder as the repo containing this file. So if the caller has not independently set up the
-        # environment variable `Chassis_TestStatics.CHASSIS_SCENARIOS_REPO`, we give it a plausible default value
+        # environment variable `TestStatics.SCENARIOS_REPO`, we give it a plausible default value
         # so that tests don't fail to run due to a missing environment variable.
         #
         # This way the caller still has the flexibility of choosing to deploy the scenarios repo 
-        # in an unorthodox location and set `Chassis_TestStatics.CHASSIS_SCENARIOS_REPO` to point there. But for
+        # in an unorthodox location and set `TestStatics.SCENARIOS_REPO` to point there. But for
         # most situations, where the scenarios repo is deployed in the "usual place" (i.e., under the same parent folder
         # as the repo containing this file), the default below will forgive callers for "forgetting" to set the environment
         # variable.
         #
-        scenarios_repo                                  = _os.environ.get(Chassis_TestStatics.CHASSIS_SCENARIOS_REPO)
+        scenarios_repo                                  = _os.environ.get(TestStatics.SCENARIOS_REPO)
         if scenarios_repo is None:
             scenarios_repo                              = PathUtils().n_directories_up(__file__, 5) + "/conway.scenarios"
-            logger.log(f"${Chassis_TestStatics.CHASSIS_SCENARIOS_REPO} is not set - defaulting it to {scenarios_repo}",
+            logger.log(f"${TestStatics.SCENARIOS_REPO} is not set - defaulting it to {scenarios_repo}",
                        log_level                = 1,
                        stack_level_increase     = 0)
-            _os.environ[Chassis_TestStatics.CHASSIS_SCENARIOS_REPO] = scenarios_repo
+            _os.environ[TestStatics.SCENARIOS_REPO] = scenarios_repo
 
           
         super().__init__(app_name=APP_NAME, config_path=config_path, logger=logger)
