@@ -4,10 +4,10 @@ from conway.util.warnings_filter                                            impo
 
 from conway_acceptance.test_logic.acceptance_test_context                   import AcceptanceTestContext
 from conway_acceptance.util.scenarios_config                                import ScenariosConfig
+from conway_acceptance.util.test_statics                                    import TestStatics
 
 from conway_test.framework.scenario_foundry.operator_scenario_manifest      import OperatorScenarioManifest
 from conway_test.framework.test_database.operator_test_database             import Operator_TestDatabase
-from conway_test.util.chassis_test_statics                                  import Chassis_TestStatics
 
 
 class Chassis_TestContext(AcceptanceTestContext):
@@ -19,7 +19,7 @@ class Chassis_TestContext(AcceptanceTestContext):
         the conway_test module.
 
         @param test_case_name A string, representing the "name" of the test case using this context. It should match
-                exactly what appears in the $CHASSIS_SCENARIOS_REPO/ScenariosIds.yaml file.
+                exactly what appears in the $SCENARIOS_REPO/ScenariosIds.yaml file.
 
         @param notes A AcceptanceTestNotes object, that should be the data structure in which the test case can record
                 observations in the course of its execution under this context. When the context exits these notes
@@ -51,9 +51,9 @@ class Chassis_TestContext(AcceptanceTestContext):
     def _scenarios_repo(self):
         '''
         '''
-        scenarios_repo                                  = _os.environ.get(Chassis_TestStatics.CHASSIS_SCENARIOS_REPO)
+        scenarios_repo                                  = _os.environ.get(TestStatics.SCENARIOS_REPO)
         if scenarios_repo == None:
-            raise ValueError("Environment variable '" + Chassis_TestStatics.CHASSIS_SCENARIOS_REPO + "' is not set." 
+            raise ValueError("Environment variable '" + TestStatics.SCENARIOS_REPO + "' is not set." 
                               + "\nIt should point to the location where you deployed the 'conway_scenarios' repo" )
         
         return scenarios_repo
