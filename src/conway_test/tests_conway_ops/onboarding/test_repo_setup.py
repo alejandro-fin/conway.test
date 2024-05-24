@@ -5,8 +5,7 @@ from conway.util.secrets                                                        
 
 from conway_acceptance.test_logic.acceptance_test_notes                             import AcceptanceTestNotes
 
-from conway_ops.onboarding.repo_bundle                                              import RepoBundle
-from conway_ops.onboarding.repo_bundle_subset                                       import RepoBundleSubset
+from conway_ops.onboarding.repo_bundle_factory                                      import RepoBundleFactory
 from conway_ops.onboarding.repo_setup                                               import RepoSetup
 from conway_ops.repo_admin.branch_lifecycle_manager                                 import BranchLifecycleManager
 from conway_ops.util.git_branches                                                   import GitBranches
@@ -94,10 +93,8 @@ class TestRepoSetup(RepoManipulationTestCase):
         DEV_PROJECT_ROOT                = f"{LOCAL_DEV_ROOT}/{PROJECT}"
 
         GH_SECRETS_PATH                 = Secrets.SECRETS_PATH()
- 
-        REPO_BUNDLE, path               = P.instantiate_repo_bundle(PROJECT, operate=OPERATE)
 
-        PROJECT_LOCAL_BUNDLE            = RepoBundleSubset(REPO_BUNDLE, REPO_LIST)
+        PROJECT_LOCAL_BUNDLE            = RepoBundleFactory().inferFromRepoList(REPO_LIST)
 
         DEV_ADMIN                       = BranchLifecycleManager(
                                                     local_root              = DEV_PROJECT_ROOT, 
