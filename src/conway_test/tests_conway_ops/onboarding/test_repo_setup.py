@@ -1,6 +1,7 @@
 import sys                                                                          as _sys
 
 from conway.database.data_accessor                                                  import DataAccessor
+from conway.util.profiler                                                           import Profiler
 from conway.util.secrets                                                            import Secrets
 
 from conway_acceptance.test_logic.acceptance_test_notes                             import AcceptanceTestNotes
@@ -41,7 +42,7 @@ class TestRepoSetup(RepoManipulationTestCase):
             remote_repos_root                           = ctx.test_database.remote_repos_hub.hub_root()
 
             # Pre-flight: create the repos in question
-            self._create_github_repos(ctx)
+            creation_result                             = self._create_github_repos(ctx)
 
             # Now we can do the test: setup local repos that are cloned from GitHub
             #
@@ -56,14 +57,15 @@ class TestRepoSetup(RepoManipulationTestCase):
             #
             # So we copy a previously prepared class to the ops repo:
             #
-            with DataAccessor(url = f"{local_repos_root}") as ax:
-                ax.copy_from(src_url=f"{ctx.manifest.path_to_seed()}/files_to_add")
+            with Profiler("Creating branch report"):
+                with DataAccessor(url = f"{local_repos_root}") as ax:
+                    ax.copy_from(src_url=f"{ctx.manifest.path_to_seed()}/files_to_add")
 
-            branch_manager                              = self._branch_manager(ctx)
+                branch_manager                          = self._branch_manager(ctx)
 
 
-            branch_manager.create_repo_report(publications_folder           = ctx.manifest.path_to_actuals(), 
-                                                mask_nondeterministic_data  = True)
+                branch_manager.create_repo_report(publications_folder           = ctx.manifest.path_to_actuals(), 
+                                                    mask_nondeterministic_data  = True)
 
             self.assert_database_structure(ctx, excels_to_compare)  
 
@@ -93,7 +95,7 @@ class TestRepoSetup(RepoManipulationTestCase):
         DEV_PROJECT_ROOT                = f"{LOCAL_DEV_ROOT}/{PROJECT}"
 
         GH_SECRETS_PATH                 = Secrets.SECRETS_PATH()
-
+ 
         PROJECT_LOCAL_BUNDLE            = RepoBundleFactory.inferFromRepoList(REPO_LIST)
 
         DEV_ADMIN                       = BranchLifecycleManager(
