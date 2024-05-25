@@ -94,7 +94,7 @@ class TestRepoSetup(RepoManipulationTestCase):
 
         GH_SECRETS_PATH                 = Secrets.SECRETS_PATH()
 
-        PROJECT_LOCAL_BUNDLE            = RepoBundleFactory().inferFromRepoList(REPO_LIST)
+        PROJECT_LOCAL_BUNDLE            = RepoBundleFactory.inferFromRepoList(REPO_LIST)
 
         DEV_ADMIN                       = BranchLifecycleManager(
                                                     local_root              = DEV_PROJECT_ROOT, 
