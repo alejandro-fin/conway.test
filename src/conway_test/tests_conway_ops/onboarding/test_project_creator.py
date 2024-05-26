@@ -39,12 +39,16 @@ class TestProjectCreator(RepoManipulationTestCase):
                                                                             remote_gh_user         = None, 
                                                                             remote_gh_organization = None, 
                                                                             gh_secrets_path        = None)
-            repo_bundle                                 = asyncio.run(admin.create_project(project_name     = TEST_PROJECT,
-                                                                               work_branch_name = "bar-dev"))
+            
+            with asyncio.Runner() as runner:
+                repo_bundle                                 = runner.run(admin.create_project(
+                                                                            project_name            = TEST_PROJECT,
+                                                                            work_branch_name        = "bar-dev"))
 
-            admin.repo_bundle                           = repo_bundle
+                admin.repo_bundle                           = repo_bundle
 
-            admin.create_repo_report(publications_folder=ctx.manifest.path_to_actuals(), mask_nondeterministic_data=True)
+                runner.run(admin.create_repo_report(    publications_folder         = ctx.manifest.path_to_actuals(), 
+                                                        mask_nondeterministic_data  = True))
 
             self.assert_database_structure(ctx, excels_to_compare)       
 

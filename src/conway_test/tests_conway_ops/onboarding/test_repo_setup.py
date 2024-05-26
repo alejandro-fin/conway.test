@@ -1,3 +1,4 @@
+import asyncio
 import sys                                                                          as _sys
 
 from conway.database.data_accessor                                                  import DataAccessor
@@ -32,42 +33,44 @@ class TestRepoSetup(RepoManipulationTestCase):
         
 
         with Chassis_TestContext(MY_NAME, notes=notes) as ctx:
+            with asyncio.Runner() as runner:
 
-            project                                     = ConwayTestUtils.project_name(ctx.scenario_id)
-            excels_to_compare.addXL_RepoStats(project)
+                project                                     = ConwayTestUtils.project_name(ctx.scenario_id)
+                excels_to_compare.addXL_RepoStats(project)
 
-            sdlc_root                                   = f"{ctx.manifest.path_to_seed()}/sdlc_root"
+                sdlc_root                                   = f"{ctx.manifest.path_to_seed()}/sdlc_root"
 
-            local_repos_root                            = ctx.test_database.local_repos_hub.hub_root()
-            remote_repos_root                           = ctx.test_database.remote_repos_hub.hub_root()
+                local_repos_root                            = ctx.test_database.local_repos_hub.hub_root()
+                remote_repos_root                           = ctx.test_database.remote_repos_hub.hub_root()
 
-            # Pre-flight: create the repos in question
-            creation_result                             = self._create_github_repos(ctx)
+                # Pre-flight: create the repos in question
+                creation_result                             = self._create_github_repos(ctx)
 
-            # Now we can do the test: setup local repos that are cloned from GitHub
-            #
-            admin                                       = RepoSetup(sdlc_root       = sdlc_root,
-                                                                    profile_name    = self.profile_name)
-            
-            # Create the local development environment
-            admin.setup(project)                
+                # Now we can do the test: setup local repos that are cloned from GitHub
+                #
+                admin                                       = RepoSetup(sdlc_root       = sdlc_root,
+                                                                        profile_name    = self.profile_name)
+                
+                # Create the local development environment
+                runner.run(admin.setup(project))                
 
-            # Before we create the branch manager, we will need a scenario-specific RepoBundle class
-            # to be added, since it will be instantiated when we later call self._branch_manager(ctx)
-            #
-            # So we copy a previously prepared class to the ops repo:
-            #
-            with Profiler("Creating branch report"):
-                with DataAccessor(url = f"{local_repos_root}") as ax:
-                    ax.copy_from(src_url=f"{ctx.manifest.path_to_seed()}/files_to_add")
+                # Before we create the branch manager, we will need a scenario-specific RepoBundle class
+                # to be added, since it will be instantiated when we later call self._branch_manager(ctx)
+                #
+                # So we copy a previously prepared class to the ops repo:
+                #
+                with Profiler("Creating branch report"):
+                    with DataAccessor(url = f"{local_repos_root}") as ax:
+                        ax.copy_from(src_url=f"{ctx.manifest.path_to_seed()}/files_to_add")
 
-                branch_manager                          = self._branch_manager(ctx)
+                    branch_manager                          = self._branch_manager(ctx)
 
 
-                branch_manager.create_repo_report(publications_folder           = ctx.manifest.path_to_actuals(), 
-                                                    mask_nondeterministic_data  = True)
+                    runner.run(branch_manager.create_repo_report(
+                                            publications_folder             = ctx.manifest.path_to_actuals(), 
+                                            mask_nondeterministic_data      = True))
 
-            self.assert_database_structure(ctx, excels_to_compare)  
+                self.assert_database_structure(ctx, excels_to_compare)  
 
     def _branch_manager(self, ctx):
         '''
