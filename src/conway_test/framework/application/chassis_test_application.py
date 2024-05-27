@@ -66,7 +66,51 @@ class Chassis_Test_Application(Application):
                        log_level                = 1,
                        stack_level_increase     = 0)
             _os.environ[TestStatics.SCENARIOS_REPO] = scenarios_repo
-
-          
+         
         super().__init__(app_name=APP_NAME, config_path=config_path, logger=logger)
+
+        # Configure the logger to write to the file system in addition to logging to standard output
+        # GOTCHA 1:
+        #   We do this *after* creating the application instance (i.e., self) since it uses `self.start_time`
+        #   which is set in the parent's constructor
+        #
+        # GOTCHA 2:
+        #   Make sure the folder in which the logs are saved is "standard in Linux" for logs, and
+        #   that it is a folder accessible to programs that scrape logs, such as Promtail (which feeds Loki/Grafana).
+        #   For example, when Promtail runs as a Linux systemd service, by default it runs under a user called
+        #   "promtail", wo you want to make sure that user "promtail" has read access to every folder in the path
+        #   that goes from the root / all the way to the log file(s)
+        #
+        # Based on this considerations, we base the path for the logs to be under /var/log but based on the
+        # "environment" this application is running under. For that we start with the __file__, which is something like
+        #
+        #       /home/alex/consultant1@CCL/dev/conway_fork/conway.test/src/conway_test/framework/application/chassis_test_application.py
+        #
+        #   In this example, the "environment" would be "consultant1@CCL/dev/conway_fork"
+        #
+        #   After folders are created, you need to give permissions to the user under which this application is run.
+        #   Typically that user would be the developer. You also need permissions for the user(s) of scraping
+        #   tools, like promtail.
+        #
+        #   You can recursively give permissions to all such users with something like this, in the above example:
+        #
+        #       sudo chmod -R 777  /var/log/ccl/consultant1@CCL/dev/conway_fork/ConwayTestApp/
+        #
+
+        # end_path is something like "/home/alex/consultant1@CCL/dev/conway_fork"
+        #
+        end_path                                        = PathUtils().n_directories_up(__file__, 5)
+        
+        # start_path is something like "/home/alex"
+        start_path                                      = PathUtils().n_directories_up(__file__, 8)
+
+        # environment is something like "consultant1@CCL/dev/conway_fork"
+        environment                                     = end_path[len(start_path)+1:]
+
+        log_filename                                    = f"{self.start_time}_{APP_NAME}.log"
+        #log_file                                        = f"{scenarios_repo}/logs/{log_filename}"
+        log_file                                        = f"/var/log/ccl/{environment}/{APP_NAME}/{log_filename}"
+        logger.log_file                                 = log_file
+
+
 
