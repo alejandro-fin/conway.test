@@ -45,7 +45,8 @@ class Chassis_Test_Application(Application):
         #
         config_path                                     = PathUtils().n_directories_up(__file__, 4) + "/config"
 
-        logger                                          = Test_Logger(activation_level=Logger.LEVEL_INFO)
+        logger                                          = Test_Logger(activation_level=Logger.LEVEL_INFO,
+                                                                      schedule_based_logging=True)
 
         # For ease of use, we want the test harness to be as "auto-configurable" as possible. So we want it
         # to be able to "discover" the location of the test scenarios repo, which normally is under the same
@@ -62,9 +63,20 @@ class Chassis_Test_Application(Application):
         scenarios_repo                                  = _os.environ.get(TestStatics.SCENARIOS_REPO)
         if scenarios_repo is None:
             scenarios_repo                              = PathUtils().n_directories_up(__file__, 5) + "/conway.scenarios"
+            # Value of -1 was found by trial and error to correctly show this caller in the log line. Trial and error 
+            # was necessary since this is not the way that logs should be normally called: it should be by calling
+            # Logger.log_info(--), say, which is the assumption made by the logger's inference logic to find out the 
+            # right Python class/line number to displayin the log. 
+            # But we can't invoke Logger.log_info(--) here since we are in the constructor of the global
+            # Application singleton instance, and the standard Logger.log_info(--) assumes that such construction already
+            # took place.
+            # So instead we call a lower-level method, but that means we must massage the `stack_level_increase`
+            # parameter to "correct" for the (in this case erroneous) inferences made by the logger around who the
+            # caller is.
+            #
             logger.log(f"${TestStatics.SCENARIOS_REPO} is not set - defaulting it to {scenarios_repo}",
                        log_level                = 1,
-                       stack_level_increase     = 0)
+                       stack_level_increase     = -1) 
             _os.environ[TestStatics.SCENARIOS_REPO] = scenarios_repo
          
         super().__init__(app_name=APP_NAME, config_path=config_path, logger=logger)
@@ -78,7 +90,7 @@ class Chassis_Test_Application(Application):
         #   Make sure the folder in which the logs are saved is "standard in Linux" for logs, and
         #   that it is a folder accessible to programs that scrape logs, such as Promtail (which feeds Loki/Grafana).
         #   For example, when Promtail runs as a Linux systemd service, by default it runs under a user called
-        #   "promtail", wo you want to make sure that user "promtail" has read access to every folder in the path
+        #   "promtail", so you want to make sure that user "promtail" has read access to every folder in the path
         #   that goes from the root / all the way to the log file(s)
         #
         # Based on this considerations, we base the path for the logs to be under /var/log but based on the

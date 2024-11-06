@@ -1,5 +1,6 @@
 import os as _os
 
+from conway.application.application                                         import Application
 from conway.util.warnings_filter                                            import WarningsFilter
 
 from conway_acceptance.test_logic.acceptance_test_context                   import AcceptanceTestContext
@@ -83,7 +84,18 @@ class Chassis_TestContext(AcceptanceTestContext):
     
 
     def __exit__(self, exc_type, exc_value, exc_tb):
+        '''
+        For tests, we buffer logs since we want them sorted based on scheduling considerations, not
+        based on when each line executes. So this method flushes the buffer since this context manager
+        class represents the scope intended for 1 test case, and that is the scope for which we want to
+        sort based on scheduling considerations.
+        
+        Refer to conway.async_utils.schedule_based_log_sorter.ScheduleBasedLogSorter for more information about
+        what scheduled-based logging is about.
+        '''
         super().__exit__(exc_type, exc_value, exc_tb)
+
+        Application.app().logger.flush()
 
         # Check out the collected warnings, and if appropriate raise errors. This is done by delegating
         # to the WarningsFilter
