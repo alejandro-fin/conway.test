@@ -45,7 +45,8 @@ class Chassis_Test_Application(Application):
         #
         config_path                                     = PathUtils().n_directories_up(__file__, 4) + "/config"
 
-        logger                                          = Test_Logger(activation_level=Logger.LEVEL_INFO)
+        logger                                          = Test_Logger(activation_level=Logger.LEVEL_INFO,
+                                                                      schedule_based_logging=True)
 
         # For ease of use, we want the test harness to be as "auto-configurable" as possible. So we want it
         # to be able to "discover" the location of the test scenarios repo, which normally is under the same
