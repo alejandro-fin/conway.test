@@ -1,8 +1,9 @@
 import abc
 import asyncio
 
-from conway.application.application                                 import Application
+from conway.async_utils.scheduling_context                          import SchedulingContext
 from conway.async_utils.ushering_to                                 import UsheringTo
+from conway.observability.logger                                    import Logger
 from conway.util.json_utils                                         import JSON_Utils
 
 from conway_acceptance.test_logic.acceptance_test_case              import AcceptanceTestCase
@@ -96,16 +97,23 @@ class RepoManipulationTestCase(AcceptanceTestCase, abc.ABC):
 
             async with UsheringTo(result_l) as usher:
                 for repo_name in P.REPO_LIST(project_name):
-                    usher                           += self._create_one_repo(repo_name, github, pre_existing_repos_names)
+                    usher                           += self._create_one_repo(SchedulingContext(),
+                                                                             repo_name, 
+                                                                             github,
+                                                                             pre_existing_repos_names)
 
 
-        Application.app().log(f"List of remote repos re-created: {result_l}")
+        Logger.log_info(f"List of remote repos re-created: {result_l}")
         return result_l
 
         
       
-    async def _create_one_repo(self, repo_name, github, pre_existing_repos_names):
+    async def _create_one_repo(self, scheduling_context, repo_name, github, pre_existing_repos_names):
         '''
+        :param scheduling_context: contains information about the stack at the time that this coroutine was created.
+            Typical use case is to reflect in the logs that order in which the code was written (i.e., the logical
+            order) as opposed to the order in which the code is executed asynchronousy.
+        :type scheduling_context: conway.async_utils.scheduling_context.SchedulingContext
         '''
         if repo_name in pre_existing_repos_names:
 
@@ -117,7 +125,8 @@ class RepoManipulationTestCase(AcceptanceTestCase, abc.ABC):
                                                                     resource = "repos",
                                                                     sub_path = f"/{repo_name}")
             nice_removal_data                       = JSON_Utils.nice(removal_data)
-            Application.app().log(f"Removed pre-existing repo '{repo_name}' so we can re-create it - response was {nice_removal_data}")
+            Logger.log_info(f"Removed pre-existing repo '{repo_name}' so we can re-create it - response was {nice_removal_data}",
+                            xlabels=scheduling_context.as_xlabel())
 
         # Create the repo. We do 
         #
@@ -136,7 +145,7 @@ class RepoManipulationTestCase(AcceptanceTestCase, abc.ABC):
                                                                 })
             
         repo_url                                    = repo_creation_result["html_url"]
-        Application.app().log(f"Created repo '{repo_name}' with URL {repo_url}")
+        Logger.log_info(f"Created repo '{repo_name}' with URL {repo_url}", xlabels=scheduling_context.as_xlabel())
 
 
         # We need to create the integration branch, but for that we first need to get the
@@ -183,7 +192,8 @@ class RepoManipulationTestCase(AcceptanceTestCase, abc.ABC):
                                                             })
         
         branch_url                                  = branch_creation_result["url"]
-        Application.app().log(f"Created '{integration}' branch in '{repo_name}' with URL {branch_url}")
+        Logger.log_info(f"Created '{integration}' branch in '{repo_name}' with URL {branch_url}",
+                        xlabels=scheduling_context.as_xlabel())
 
         # By away of status, return the repo_name so the caller knows which repo was created
         return repo_name
