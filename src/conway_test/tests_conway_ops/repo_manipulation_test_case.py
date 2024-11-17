@@ -84,6 +84,8 @@ class RepoManipulationTestCase(AcceptanceTestCase, abc.ABC):
         #
         github                                      = GitHub_Client(github_owner = P.GH_ORGANIZATION)
         result_l                                    =  []
+        
+        parent_context                              = SchedulingContext()
 
         # GitHub HTTP call is something like
         #
@@ -91,13 +93,14 @@ class RepoManipulationTestCase(AcceptanceTestCase, abc.ABC):
         #
         async with github:
             
-            pre_existing_repos                      = await github.GET( resource    = "users", 
-                                                                        sub_path    = "/repos")
+            pre_existing_repos                      = await github.GET( parent_context  = parent_context,
+                                                                        resource        = "users", 
+                                                                        sub_path        = "/repos")
             pre_existing_repos_names                = [r["name"] for r in pre_existing_repos]
 
             async with UsheringTo(result_l) as usher:
                 for repo_name in P.REPO_LIST(project_name):
-                    usher                           += self._create_one_repo(SchedulingContext(),
+                    usher                           += self._create_one_repo(SchedulingContext(parent_context),
                                                                              repo_name, 
                                                                              github,
                                                                              pre_existing_repos_names)
@@ -122,8 +125,9 @@ class RepoManipulationTestCase(AcceptanceTestCase, abc.ABC):
             #   DELETE https://api.github.com/repos/testrobot-ccl/{repo_name}
             #
             removal_data                            = await github.DELETE(
-                                                                    resource = "repos",
-                                                                    sub_path = f"/{repo_name}")
+                                                                    parent_context  = scheduling_context,
+                                                                    resource        = "repos",
+                                                                    sub_path        = f"/{repo_name}")
             nice_removal_data                       = JSON_Utils.nice(removal_data)
             Logger.log_info(f"Removed pre-existing repo '{repo_name}' so we can re-create it - response was {nice_removal_data}",
                             xlabels=scheduling_context.as_xlabel())
@@ -136,6 +140,7 @@ class RepoManipulationTestCase(AcceptanceTestCase, abc.ABC):
         #           {owner} is not added to the URL
         #
         repo_creation_result                        = await github.POST(
+                                                            parent_context  = scheduling_context,
                                                             resource        = "user",
                                                             sub_path        = "/repos",
                                                             body            = 
@@ -154,6 +159,7 @@ class RepoManipulationTestCase(AcceptanceTestCase, abc.ABC):
         #       GET https://api.github.com/repos/testrobot-ccl/{repo_name}/git/refs/heads
         #
         heads_data                                  = await github.GET(
+                                                            parent_context  = scheduling_context,
                                                             resource        = "repos",
                                                             sub_path        = f"/{repo_name}/git/refs/heads",
                                                             )
@@ -184,6 +190,7 @@ class RepoManipulationTestCase(AcceptanceTestCase, abc.ABC):
         #
         integration                                 = GitBranches.INTEGRATION_BRANCH.value
         branch_creation_result                      = await github.POST(
+                                                            parent_context  = scheduling_context,
                                                             resource        = "repos",
                                                             sub_path        = f"/{repo_name}/git/refs",
                                                             body            = {
